@@ -16,7 +16,7 @@ const ProductList = () => {
 
    return (
       <Fragment>
-         <Title />
+         <Title title="Danh sách sản phẩm"/>
          <ProductTable products={items} />
       </Fragment>
    );

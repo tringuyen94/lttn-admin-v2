@@ -14,7 +14,6 @@ export default function UpdatePassword() {
          // Replace with your API call logic
          const res = await api.patch('api/v1/auth/change-password', data, { withCredentials: true })
          toast.success(res.data.message)
-
          reset(); // Reset the form
       } catch (err) {
          toast.error(err.response.data.message || 'Something wrong')
@@ -26,7 +25,6 @@ export default function UpdatePassword() {
    return (
       <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto space-y-4">
          <h2 className="text-2xl font-bold text-center">Cập nhật mật khẩu</h2>
-
          {/* New Password Field */}
          <div>
             <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">

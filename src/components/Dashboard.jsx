@@ -11,7 +11,7 @@ const Dashboard = () => {
    const projectCount = useSelector(state => state.projects.items.length)
    return (
       <Fragment>
-         <Til />
+         <Title title="Trang chủ" />
          <div className="pt-24 pl-80 pr-5 space-y-4">
             <div className="flex space-x-4">
                <DashboardCard title="Sản phẩm" value={productCount} />
