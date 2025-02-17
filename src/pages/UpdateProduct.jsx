@@ -102,7 +102,7 @@ const UpdateProduct = () => {
          }
       }
       try {
-         await dispatch(updateImage(formData)).unwrap()
+         await dispatch(updateImage({ productId: id, productInfo: formData })).unwrap()
          toast.success('Cập nhật ảnh thành công')
          setTimeout(() => navigate(0), 1000)
       } catch (error) {

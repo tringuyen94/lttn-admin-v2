@@ -82,11 +82,11 @@ export const updateProduct = createAsyncThunk(
 );
 export const updateImage = createAsyncThunk(
   "product/updateImage",
-  async (data, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
       const response = await api.patch(
-        `api/v1/products/update-image/67b312fd24831fe66d932361`,
-        data,
+        `api/v1/products/update-image/${payload.productId}`,
+        payload.productInfo,
         {
           withCredentials: true,
           headers: {
