@@ -5,16 +5,17 @@ import { useForm, Controller } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import _ from 'lodash'
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css'; // Import the Quill CSS
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 import { createProduct } from '../redux/slices/productSlice';
+import { useNavigate } from 'react-router-dom';
 
 const CreateProduct = () => {
    const dispatch = useDispatch()
+   const navigate = useNavigate()
    //Get Brands and Categories from store (redux)
    const brands = useSelector(state => state.brands.items)
    const categories = useSelector(state => state.categories.items)
-
    const [imagesPreview, setImagesPreview] = useState([])
    const [coverImagePreview, setCoverImagePreview] = useState('')
 
@@ -43,7 +44,7 @@ const CreateProduct = () => {
       try {
          await dispatch(createProduct(formData)).unwrap()
          toast.success(`Đã thêm ${data.product_name}`)
-         reset()
+         setTimeout(() => navigate(0), 1000)
       } catch (error) {
          toast.error(error);
       }

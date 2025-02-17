@@ -2,7 +2,6 @@
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
-import { update } from "lodash";
 
 export const createProduct = createAsyncThunk(
   "products/createProduct",
@@ -68,25 +67,25 @@ export const deleteProduct = createAsyncThunk(
 );
 export const updateProduct = createAsyncThunk(
   "product/updateProduct",
-  async (productId, data, { rejectWithValue }) => {
+  async (data, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`api/v1/products/${productId}`, data, {
+      const response = await api.patch(`api/v1/products/${data._id}`, data, {
         withCredentials: true,
       });
-      return response.data.metadata; // Return the deleted brand ID
+      return response.data.metadata;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete brand"
+        error.response?.data?.message || "Failed to update product"
       );
     }
   }
 );
 export const updateImage = createAsyncThunk(
   "product/updateImage",
-  async (productId, data, { rejectWithValue }) => {
+  async (data, { rejectWithValue }) => {
     try {
-      const response = await api.delete(
-        `api/v1/products/update-image/${productId}`,
+      const response = await api.patch(
+        `api/v1/products/update-image/67b312fd24831fe66d932361`,
         data,
         {
           withCredentials: true,
@@ -98,7 +97,7 @@ export const updateImage = createAsyncThunk(
       return response.data.metadata; // Return the deleted brand ID
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete brand"
+        error.response?.data?.message || "Failed to update product"
       );
     }
   }
@@ -144,9 +143,12 @@ const productSlice = createSlice({
 
       // Create product
       .addCase(createProduct.fulfilled, (state, action) => {
-        state.items.push(action.payload); // Add new brand to the list
+        state.items.push(action.payload);
       })
-
+      .addCase(updateProduct.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload;
+      })
       .addCase(updateProduct.fulfilled, (state, action) => {
         state.item = action.payload;
       })

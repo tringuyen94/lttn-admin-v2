@@ -8,8 +8,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { toast } from 'react-toastify';
 import _ from 'lodash'
 import { fetchProductById, updateImage, updateProduct } from '../redux/slices/productSlice';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
+import ReactQuill from 'react-quill-new';
+import 'react-quill-new/dist/quill.snow.css';
 
 const infoFields = ['brand', 'category', 'product_capacity', 'product_description', 'product_name', 'product_isnew']
 const imageFields = ['product_images', 'product_cover_image']
@@ -102,7 +102,7 @@ const UpdateProduct = () => {
          }
       }
       try {
-         await dispatch(updateImage(id, data)).unwrap()
+         await dispatch(updateImage(formData)).unwrap()
          toast.success('Cập nhật ảnh thành công')
          setTimeout(() => navigate(0), 1000)
       } catch (error) {
@@ -115,13 +115,12 @@ const UpdateProduct = () => {
     */
    const onSubmit = async (data) => {
 
-
       try {
-         await dispatch(updateProduct(id, data)).unwrap()
+         await dispatch(updateProduct(data)).unwrap()
          toast.success('Cập nhật thành công')
          setTimeout(() => navigate(0), 1000)
       } catch (error) {
-         toast.error('Cập nhật thất bại');
+         toast.error(error);
       }
    };
    return (
