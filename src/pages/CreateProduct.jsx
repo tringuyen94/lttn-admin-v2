@@ -109,6 +109,7 @@ const CreateProduct = () => {
                   <label className="block text-gray-700 font-medium mb-1">Công suất:</label>
                   <input
                      type="number"
+                     step="any"
                      {...register('product_capacity', {
                         required: 'Công suất không được để trống', valueAsNumber: true, // Ensures that the input value is treated as a number
                         min: {

@@ -153,6 +153,7 @@ const UpdateProduct = () => {
                      <label className="block text-gray-700 font-medium mb-1">Công suất:</label>
                      <input
                         type="number"
+                        step="any"
                         {...register('product_capacity', {
                            min: { value: 1, message: 'Price must be at least 1' },
                         })}
