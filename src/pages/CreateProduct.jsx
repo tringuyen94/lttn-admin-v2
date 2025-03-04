@@ -113,7 +113,7 @@ const CreateProduct = () => {
                      {...register('product_capacity', {
                         required: 'Công suất không được để trống', valueAsNumber: true, // Ensures that the input value is treated as a number
                         min: {
-                           value: 1,
+                           value: 0,
                            message: 'Công suất phải lớn hơn 0',
                         },
                      })}
