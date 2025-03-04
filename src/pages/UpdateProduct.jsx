@@ -155,7 +155,7 @@ const UpdateProduct = () => {
                         type="number"
                         step="any"
                         {...register('product_capacity', {
-                           min: { value: 1, message: 'Price must be at least 1' },
+                           min: { value: 0, message: 'Giá trị phải lớn hơn 0' },
                         })}
                         className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
                      />
