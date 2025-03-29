@@ -1,6 +1,7 @@
-import React, { Fragment } from 'react';
+import React, { Fragment, useEffect } from 'react';
 import { Navigate } from 'react-router-dom'; // Use for navigation after successful login
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/AuthContext.jsx';
+
 import { useForm } from 'react-hook-form'
 import Title from '../components/Title';
 import { Helmet } from 'react-helmet-async';
@@ -12,10 +13,12 @@ const Login = () => {
       await login(data.username, data.password)
    }
 
-   //Redirect to dashboard if Authenticated
-   if (isAuthenticated) {
-      return <Navigate to="/dashboard" replace />
-   }
+   useEffect(() => {
+      if (isAuthenticated) {
+         // Redirect to dashboard if already authenticated
+         <Navigate to="/dashboard" />
+      }
+   }, [isAuthenticated])
    return (
       <Fragment>
          <Title title="Đăng nhập" />

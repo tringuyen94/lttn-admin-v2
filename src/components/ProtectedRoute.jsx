@@ -12,8 +12,8 @@ import { fetchCategories } from '../redux/slices/categorySlice';
 import { fetchProjects } from '../redux/slices/projectSlice';
 const ProtectedRoute = ({ element, ...rest }) => {
    const { isAuthenticated } = useAuth(); // Get authentication state from context
-   const location = useLocation();
 
+   const location = useLocation();
    const dispatch = useDispatch()
 
 

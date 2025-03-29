@@ -2,8 +2,9 @@
 import React, { useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import ReactQuill from 'react-quill-new';
-import 'react-quill-new/dist/quill.snow.css';
 import { createProject } from '../redux/slices/projectSlice';
+import 'react-quill-new/dist/quill.snow.css';
+
 import { useSelector } from 'react-redux';
 import { baseURL } from '../api/axios';
 import { toast } from 'react-toastify';

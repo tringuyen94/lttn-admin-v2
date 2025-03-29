@@ -5,8 +5,8 @@ import Project from './pages/Project';
 import Category from './pages/Category';
 import Brand from './pages/Brand';
 import Dashboard from './components/Dashboard';
-import Setting from './pages/UpdatePassword';
 import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import CreateProduct from './pages/CreateProduct';
 import UpdateProduct from './pages/UpdateProduct';
 import Login from './pages/Login';
@@ -22,7 +22,6 @@ function App() {
 
   return (
     <HelmetProvider>
-
       <Router>
         <AuthProvider>
           <Routes>
@@ -42,12 +41,10 @@ function App() {
             <Route path="/cap-nhat-mat-khau" element={<ProtectedRoute element={<UpdatePassword />} />} />
             <Route path="*" element={<Navigate to="/login" />} />
           </Routes>
-
           <ToastContainer hideProgressBar={true} />
         </AuthProvider >
       </Router >
     </HelmetProvider>
-
   );
 }
 
