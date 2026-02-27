@@ -4,7 +4,7 @@ import Title from './Title';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const STATS = [
-   { key: 'products', label: 'Sản phẩm', icon: Package, selector: (s) => s.products.items.length },
+   { key: 'products', label: 'Sản phẩm', icon: Package, selector: (s) => s.products.total },
    { key: 'projects', label: 'Dự án', icon: FolderKanban, selector: (s) => s.projects.items.length },
    { key: 'brands', label: 'Nhãn hàng', icon: Tags, selector: (s) => s.brands.items.length },
    { key: 'categories', label: 'Loại SP', icon: Layers, selector: (s) => s.categories.items.length },
