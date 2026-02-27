@@ -1,5 +1,6 @@
 // src/redux/slices/productSlice.js
 
+
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
 
@@ -16,7 +17,7 @@ export const createProduct = createAsyncThunk(
       return response.data.metadata;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create brand"
+        error.response?.data?.message || "Failed to create product"
       );
     }
   }
@@ -30,7 +31,7 @@ export const fetchProductById = createAsyncThunk(
       return response.data.metadata;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch brands"
+        error.response?.data?.message || "Failed to fetch product"
       );
     }
   }
@@ -44,7 +45,7 @@ export const fetchProducts = createAsyncThunk(
       return response.data.metadata;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch brands"
+        error.response?.data?.message || "Failed to fetch products"
       );
     }
   }
@@ -60,7 +61,7 @@ export const deleteProduct = createAsyncThunk(
       return productId;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete brand"
+        error.response?.data?.message || "Failed to delete product"
       );
     }
   }
@@ -94,10 +95,10 @@ export const updateImage = createAsyncThunk(
           },
         }
       );
-      return response.data.metadata; // Return the deleted brand ID
+      return response.data.metadata;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to update product"
+        error.response?.data?.message || "Failed to update product image"
       );
     }
   }
@@ -107,21 +108,21 @@ const productSlice = createSlice({
   initialState: {
     items: [],
     item: {},
-    status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
-    error: null, // Error messages
+    total: 0,
+    status: "idle",
+    error: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Fetch brands
-
       .addCase(fetchProducts.pending, (state) => {
         state.status = "loading";
         state.error = null;
       })
       .addCase(fetchProducts.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.items = action.payload;
+        state.items = action.payload.products;
+        state.total = action.payload.pagination?.total ?? action.payload.products.length;
       })
       .addCase(fetchProducts.rejected, (state, action) => {
         state.status = "failed";
@@ -141,7 +142,6 @@ const productSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Create product
       .addCase(createProduct.fulfilled, (state, action) => {
         state.items.push(action.payload);
       })
@@ -153,7 +153,6 @@ const productSlice = createSlice({
         state.item = action.payload;
       })
 
-      // Delete product
       .addCase(deleteProduct.fulfilled, (state, action) => {
         state.items = state.items.filter(
           (product) => product._id !== action.payload

@@ -1,79 +1,98 @@
 import { useForm } from 'react-hook-form';
-import api from '../api/axios';
-import { toast } from 'react-toastify';
+import api from '@/api/axios';
+import { toast } from 'sonner';
+import Title from '@/components/Title';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { KeyRound } from 'lucide-react';
+
 export default function UpdatePassword() {
    const {
       register,
       handleSubmit,
       watch,
-      formState: { errors },
+      formState: { errors, isSubmitting },
       reset,
-   } = useForm()
+   } = useForm();
+
+   const newPassword = watch('newPassword', '');
+
    const onSubmit = async (data) => {
       try {
-         // Replace with your API call logic
-         const res = await api.patch('api/v1/auth/change-password', data, { withCredentials: true })
-         toast.success(res.data.message)
-         reset(); // Reset the form
+         const res = await api.patch('api/v1/auth/change-password', data, { withCredentials: true });
+         toast.success(res.data.message);
+         reset();
       } catch (err) {
-         toast.error(err.response.data.message || 'Something wrong')
+         toast.error(err.response?.data?.message || 'Đã xảy ra lỗi');
       }
    };
 
-   // Watch newPassword to validate confirmedPassword
-   const newPassword = watch('newPassword', '');
    return (
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto space-y-4">
-         <h2 className="text-2xl font-bold text-center">Cập nhật mật khẩu</h2>
-         {/* New Password Field */}
-         <div>
-            <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700">
-               Mật khẩu mới
-            </label>
-            <input
-               type="password"
-               id="newPassword"
-               {...register('newPassword', {
-                  required: 'Không được để trống ô này',
-                  minLength: {
-                     value: 8,
-                     message: 'Mật khẩu yêu cầu phải dài 8 ký tự',
-                  },
-               })}
-               className={`mt-1 block w-full p-2 border rounded ${errors.newPassword ? 'border-red-500' : 'border-gray-300'
-                  }`}
-            />
-            {errors.newPassword && <p className="text-red-500">{errors.newPassword.message}</p>}
-         </div>
+      <>
+         <Title title="Đổi mật khẩu" />
+         <div className="space-y-6">
+            <div>
+               <h1 className="text-2xl font-bold tracking-tight">Đổi mật khẩu</h1>
+               <p className="text-muted-foreground">Cập nhật mật khẩu tài khoản của bạn</p>
+            </div>
 
-         {/* Confirm Password Field */}
-         <div>
-            <label htmlFor="confirmedPassword" className="block text-sm font-medium text-gray-700">
-               Xác nhận mật khẩu
-            </label>
-            <input
-               type="password"
-               id="confirmedPassword"
-               {...register('confirmedPassword', {
-                  required: 'Không được để trống ô này',
-                  validate: (value) =>
-                     value === newPassword || 'Trường này phải giống với ô mật khẩu',
-               })}
-               className={`mt-1 block w-full p-2 border rounded ${errors.confirmedPassword ? 'border-red-500' : 'border-gray-300'
-                  }`}
-            />
-            {errors.confirmedPassword && (
-               <p className="text-red-500">{errors.confirmedPassword.message}</p>
-            )}
-         </div>
+            <Card className="max-w-md">
+               <CardHeader>
+                  <div className="flex items-center gap-3">
+                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                        <KeyRound className="h-5 w-5 text-muted-foreground" />
+                     </div>
+                     <div>
+                        <CardTitle>Mật khẩu mới</CardTitle>
+                        <CardDescription>Mật khẩu phải có ít nhất 8 ký tự</CardDescription>
+                     </div>
+                  </div>
+               </CardHeader>
+               <CardContent>
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="newPassword">Mật khẩu mới</Label>
+                        <Input
+                           id="newPassword"
+                           type="password"
+                           placeholder="Nhập mật khẩu mới"
+                           {...register('newPassword', {
+                              required: 'Không được để trống',
+                              minLength: {
+                                 value: 8,
+                                 message: 'Mật khẩu phải dài ít nhất 8 ký tự',
+                              },
+                           })}
+                           className={errors.newPassword ? 'border-destructive' : ''}
+                        />
+                        {errors.newPassword && <p className="text-sm text-destructive">{errors.newPassword.message}</p>}
+                     </div>
 
-         {/* Submit Button */}
-         <button
-            type="submit"
-            className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
-         >
-            Cập nhật
-         </button>
-      </form>
-   )
+                     <div className="space-y-2">
+                        <Label htmlFor="confirmedPassword">Xác nhận mật khẩu</Label>
+                        <Input
+                           id="confirmedPassword"
+                           type="password"
+                           placeholder="Nhập lại mật khẩu"
+                           {...register('confirmedPassword', {
+                              required: 'Không được để trống',
+                              validate: (value) =>
+                                 value === newPassword || 'Mật khẩu xác nhận không khớp',
+                           })}
+                           className={errors.confirmedPassword ? 'border-destructive' : ''}
+                        />
+                        {errors.confirmedPassword && <p className="text-sm text-destructive">{errors.confirmedPassword.message}</p>}
+                     </div>
+
+                     <Button type="submit" className="w-full" disabled={isSubmitting}>
+                        {isSubmitting ? 'Đang cập nhật...' : 'Cập nhật mật khẩu'}
+                     </Button>
+                  </form>
+               </CardContent>
+            </Card>
+         </div>
+      </>
+   );
 }

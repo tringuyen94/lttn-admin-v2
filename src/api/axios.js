@@ -2,10 +2,14 @@
 
 import axios from "axios";
 
-export const baseURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+const rawBaseURL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+export const baseURL = rawBaseURL.endsWith("/")
+  ? rawBaseURL
+  : `${rawBaseURL}/`;
+
 const api = axios.create({
   // eslint-disable-next-line no-undef
-  baseURL, // Thay thế bằng URL API của bạn
+  baseURL,
   headers: {
     "Content-Type": "application/json",
   },

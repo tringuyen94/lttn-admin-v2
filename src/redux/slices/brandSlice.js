@@ -1,4 +1,5 @@
-// src/redux/slices/productSlice.js
+// src/redux/slices/brandSlice.js
+
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
@@ -9,8 +10,8 @@ export const createBrand = createAsyncThunk(
     try {
       const response = await api.post("api/v1/brands", data, {
         withCredentials: true,
-      }); // API call to create a brand
-      return response.data.metadata; // Assuming the backend returns the newly created brand
+      });
+      return response.data.metadata;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to create brand"
@@ -38,7 +39,7 @@ export const deleteBrand = createAsyncThunk(
   async (brandId, { rejectWithValue }) => {
     try {
       await api.delete(`api/v1/brands/${brandId}`, { withCredentials: true });
-      return brandId; // Return the deleted brand ID
+      return brandId;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Failed to delete brand"
@@ -50,14 +51,12 @@ const brandSlice = createSlice({
   name: "brands",
   initialState: {
     items: [],
-    status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
-    error: null, // Error messages
+    status: "idle",
+    error: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Fetch brands
-
       .addCase(fetchBrands.pending, (state) => {
         state.status = "loading";
         state.error = null;
@@ -71,12 +70,10 @@ const brandSlice = createSlice({
         state.error = action.payload;
       })
 
-      // Create brand
       .addCase(createBrand.fulfilled, (state, action) => {
-        state.items.push(action.payload); // Add new brand to the list
+        state.items.push(action.payload);
       })
 
-      // Delete brand
       .addCase(deleteBrand.fulfilled, (state, action) => {
         state.items = state.items.filter(
           (brand) => brand._id !== action.payload

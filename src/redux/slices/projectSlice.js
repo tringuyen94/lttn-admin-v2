@@ -1,4 +1,5 @@
-// src/redux/slices/productSlice.js
+// src/redux/slices/projectSlice.js
+
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
@@ -9,11 +10,11 @@ export const createProject = createAsyncThunk(
     try {
       const response = await api.post("api/v1/projects", data, {
         withCredentials: true,
-      }); // API call to create a brand
-      return response.data.metadata; // Assuming the backend returns the newly created brand
+      });
+      return response.data.metadata;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create brand"
+        error.response?.data?.message || "Failed to create project"
       );
     }
   }
@@ -27,7 +28,7 @@ export const fetchProjects = createAsyncThunk(
       return response.data.metadata;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch brands"
+        error.response?.data?.message || "Failed to fetch projects"
       );
     }
   }
@@ -40,10 +41,10 @@ export const deleteProject = createAsyncThunk(
       await api.delete(`api/v1/projects/${projectId}`, {
         withCredentials: true,
       });
-      return projectId; // Return the deleted brand ID
+      return projectId;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete brand"
+        error.response?.data?.message || "Failed to delete project"
       );
     }
   }
@@ -53,33 +54,29 @@ const projectSlice = createSlice({
   initialState: {
     items: [],
     item: {},
-    status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
-    error: null, // Error messages
+    status: "idle",
+    error: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Fetch brands
-
       .addCase(fetchProjects.pending, (state) => {
         state.status = "loading";
         state.error = null;
       })
       .addCase(fetchProjects.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.items = action.payload;
+        state.items = action.payload.projects;
       })
       .addCase(fetchProjects.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload;
       })
 
-      // Create brand
       .addCase(createProject.fulfilled, (state, action) => {
-        state.items.push(action.payload); // Add new brand to the list
+        state.items.push(action.payload);
       })
 
-      // Delete brand
       .addCase(deleteProject.fulfilled, (state, action) => {
         state.items = state.items.filter(
           (project) => project._id !== action.payload

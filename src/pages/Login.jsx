@@ -1,64 +1,77 @@
-import React, { Fragment, useEffect } from 'react';
-import { Navigate } from 'react-router-dom'; // Use for navigation after successful login
-import { useAuth } from '../context/AuthContext.jsx';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
+import { useForm } from 'react-hook-form';
+import Title from '@/components/Title';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Zap } from 'lucide-react';
 
-import { useForm } from 'react-hook-form'
-import Title from '../components/Title';
-import { Helmet } from 'react-helmet-async';
-const Login = () => {
-   const { login, isAuthenticated } = useAuth()
-   const { register, handleSubmit, formState: { errors }, setError } = useForm();
+export default function Login() {
+   const { login, isAuthenticated } = useAuth();
+   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
 
    const onSubmit = async (data) => {
-      await login(data.username, data.password)
+      await login(data.username, data.password);
+   };
+
+   if (isAuthenticated) {
+      return <Navigate to="/dashboard" replace />;
    }
 
-   useEffect(() => {
-      if (isAuthenticated) {
-         // Redirect to dashboard if already authenticated
-         <Navigate to="/dashboard" />
-      }
-   }, [isAuthenticated])
    return (
-      <Fragment>
+      <>
          <Title title="Đăng nhập" />
+         <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
+            <Card className="w-full max-w-sm">
+               <CardHeader className="items-center text-center">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                     <Zap className="h-6 w-6" />
+                  </div>
+                  <CardTitle className="text-2xl">LTTN Electric</CardTitle>
+                  <CardDescription>Đăng nhập để quản lý hệ thống</CardDescription>
+               </CardHeader>
+               <CardContent>
+                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                     <div className="space-y-2">
+                        <Label htmlFor="username">Tên đăng nhập</Label>
+                        <Input
+                           id="username"
+                           placeholder="Nhập tên đăng nhập"
+                           {...register('username', {
+                              required: 'Tên đăng nhập không được để trống',
+                           })}
+                           className={errors.username ? 'border-destructive' : ''}
+                        />
+                        {errors.username && (
+                           <p className="text-sm text-destructive">{errors.username.message}</p>
+                        )}
+                     </div>
 
-         <div className="max-w-md mx-auto mt-10 p-6 bg-white shadow-lg rounded-lg">
+                     <div className="space-y-2">
+                        <Label htmlFor="password">Mật khẩu</Label>
+                        <Input
+                           id="password"
+                           type="password"
+                           placeholder="Nhập mật khẩu"
+                           {...register('password', {
+                              required: 'Mật khẩu không được để trống',
+                           })}
+                           className={errors.password ? 'border-destructive' : ''}
+                        />
+                        {errors.password && (
+                           <p className="text-sm text-destructive">{errors.password.message}</p>
+                        )}
+                     </div>
 
-            <h2 className="text-2xl font-semibold mb-4">Đăng nhập</h2>
-            <form onSubmit={handleSubmit(onSubmit)}>
-               <div className="mb-4">
-                  <label htmlFor="username" className="block text-sm font-medium text-gray-700">Tên đăng nhập</label>
-                  <input
-                     {...register('username', {
-                        required: 'Tên đăng nhập không được để trống',
-                     })}
-                     className={`mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 ${errors.email ? 'border-red-500' : ''}`}
-                  />
-                  {errors.username && <p className="text-sm text-red-500 mt-1">{errors.username.message}</p>}
-               </div>
-
-               <div className="mb-4">
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700">Mật khẩu</label>
-                  <input
-                     type="password"
-                     {...register('password', {
-                        required: 'Mật khẩu không được để trống'
-                     })}
-                     className={`mt-1 block w-full border border-gray-300 rounded-lg px-3 py-2 ${errors.password ? 'border-red-500' : ''}`}
-                  />
-                  {errors.password && <p className="text-sm text-red-500 mt-1">{errors.password.message}</p>}
-               </div>
-
-               {errors.email && !errors.password && <p className="text-sm text-red-500 mt-1">{errors.email.message}</p>}
-
-               <button type="submit" className="w-full bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50" disabled={Object.keys(errors).length > 0}>
-                  Đăng nhập
-               </button>
-            </form>
+                     <Button type="submit" className="w-full" disabled={isSubmitting}>
+                        {isSubmitting ? 'Đang xử lý...' : 'Đăng nhập'}
+                     </Button>
+                  </form>
+               </CardContent>
+            </Card>
          </div>
-      </Fragment>
+      </>
    );
-};
-
-export default Login;
+}

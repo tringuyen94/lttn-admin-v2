@@ -1,300 +1,309 @@
-// src/pages/ProductForm.js
-
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useParams, useNavigate } from 'react-router-dom';
-import { baseURL } from '../api/axios';
+import { baseURL } from '@/api/axios';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
-import _ from 'lodash'
-import { fetchProductById, updateImage, updateProduct } from '../redux/slices/productSlice';
+import { toast } from 'sonner';
+import pick from 'lodash/pick';
+import isEqual from 'lodash/isEqual';
+import { fetchProductById, updateImage, updateProduct } from '@/redux/slices/productSlice';
 import ReactQuill from 'react-quill-new';
+import Title from '@/components/Title';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { ImagePlus } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
 
-const infoFields = ['brand', 'category', 'product_capacity', 'product_description', 'product_name', 'product_isnew']
-const imageFields = ['product_images', 'product_cover_image']
-const UpdateProduct = () => {
+const infoFields = ['brand', 'category', 'product_capacity', 'product_description', 'product_name', 'product_isnew'];
+const imageFields = ['product_images', 'product_cover_image'];
+
+export default function UpdateProduct() {
    const { id } = useParams();
-   const navigate = useNavigate()
-   const dispatch = useDispatch()
+   const navigate = useNavigate();
+   const dispatch = useDispatch();
 
-   //Get Brands From Redux
-   const productData = useSelector(state => state.products.item)
-   const brands = useSelector(state => state.brands.items)
+   const productData = useSelector((state) => state.products.item);
+   const brands = useSelector((state) => state.brands.items);
 
-   //Data inital
-   const [initProduct, setInitProduct] = useState(null)
-   const [initImageProduct, setInitImageProduct] = useState(null)
+   const [initProduct, setInitProduct] = useState(null);
+   const [initImageProduct, setInitImageProduct] = useState(null);
+   const [imagesPreview, setImagesPreview] = useState([]);
+   const [coverImagePreview, setCoverImagePreview] = useState('');
 
-   //Image Privew State
-   const [imagesPreview, setImagesPreview] = useState([])
-   const [coverImagePreview, setCoverImagePreview] = useState('')
+   const { register, handleSubmit, control, reset, formState: { errors }, watch } = useForm();
 
+   const watchedInfoFields = watch(infoFields);
+   const watchedImageFields = watch(imageFields);
 
-
-   //Init useForm
-   const { register, handleSubmit, control, reset, formState: { errors }, watch } = useForm({
-   });
-
-   const watchedFields = watch();
-
-
-   //Check If Image Change
    const hasImageChanged = useMemo(() => {
-      if (!initImageProduct) return false
-      const watchImageFields = _.pick(watchedFields, imageFields)
-      return !_.isEqual(watchImageFields, initImageProduct)
-   }, [watchedFields, initImageProduct])
+      if (!initImageProduct) return false;
+      const current = pick(Object.fromEntries(imageFields.map((f, i) => [f, watchedImageFields[i]])), imageFields);
+      return !isEqual(current, initImageProduct);
+   }, [watchedImageFields, initImageProduct]);
 
-   //Check If Info Change
    const hasChanged = useMemo(() => {
       if (!initProduct) return false;
-      const watchInfoFields = _.pick(watchedFields, infoFields)
-      return !_.isEqual(watchInfoFields, initProduct)
-   }, [watchedFields, initProduct]);
+      const current = Object.fromEntries(infoFields.map((f, i) => [f, watchedInfoFields[i]]));
+      return !isEqual(current, initProduct);
+   }, [watchedInfoFields, initProduct]);
 
-   // Update preview when a new cover image is selected
+   const revokeUrls = (urls) => {
+      urls.forEach((u) => u && URL.revokeObjectURL(u));
+   };
+
    const handleCoverImageChange = (event) => {
       const file = event.target.files[0];
       if (file) {
-         const reader = new FileReader();
-         reader.onloadend = () => setCoverImagePreview(reader.result);
-         reader.readAsDataURL(file);
+         if (coverImagePreview) URL.revokeObjectURL(coverImagePreview);
+         setCoverImagePreview(URL.createObjectURL(file));
       }
    };
 
-   // Update preview when new product images are selected
    const handleProductImagesChange = (event) => {
       const files = Array.from(event.target.files);
-      const previews = files.map((file) => URL.createObjectURL(file));
-      setImagesPreview(previews);
+      revokeUrls(imagesPreview);
+      setImagesPreview(files.map((file) => URL.createObjectURL(file)));
    };
 
-   useEffect(() => {
-      dispatch(fetchProductById(id))
-   }, [id]);
+   const coverImageRegister = register('product_cover_image');
+   const productImagesRegister = register('product_images');
 
    useEffect(() => {
-      if (productData) {
-         reset({ ...productData, product_isnew: productData.product_isnew ? 'true' : 'false' })
-         const initData = _.pick(productData, ['brand', 'category', 'product_capacity', 'product_description', 'product_name', 'product_isnew'])
-         setInitProduct({ ...initData, product_isnew: productData.product_isnew ? 'true' : 'false' })
-         const initImageData = _.pick(productData, ['product_images', 'product_cover_image'])
-         setInitImageProduct(initImageData)
+      dispatch(fetchProductById(id));
+   }, [id, dispatch]);
+
+   useEffect(() => {
+      if (productData && productData._id === id) {
+         reset({ ...productData, product_isnew: productData.product_isnew ? 'true' : 'false' });
+         const initData = pick(productData, infoFields);
+         setInitProduct({ ...initData, product_isnew: productData.product_isnew ? 'true' : 'false' });
+         setInitImageProduct(pick(productData, imageFields));
       }
-   }, [productData])
+   }, [productData, id, reset]);
 
-   /**
-    * Update Image
-   */
    const onUpdateImageSubmit = async (data) => {
-      const formData = new FormData()
-
-      // Append cover image if a new file is selected
-      if (!_.isEqual(data.product_cover_image, initImageProduct.product_cover_image)) {
+      const formData = new FormData();
+      if (!isEqual(data.product_cover_image, initImageProduct.product_cover_image)) {
          formData.append('product_cover_image', data.product_cover_image[0]);
       }
-
-      // Append only new additional images if they are selected
-      if (!_.isEqual(data.product_images, initImageProduct.product_images)) {
+      if (!isEqual(data.product_images, initImageProduct.product_images)) {
          for (const file of data.product_images) {
             formData.append('product_images', file);
          }
       }
       try {
-         await dispatch(updateImage({ productId: id, productInfo: formData })).unwrap()
-         toast.success('Cập nhật ảnh thành công')
-         setTimeout(() => navigate(0), 1000)
-      } catch (error) {
-         toast.error(error);
-      }
-   }
-   /**
-    *
-    * Update Info
-    */
-   const onSubmit = async (data) => {
-
-      try {
-         await dispatch(updateProduct(data)).unwrap()
-         toast.success('Cập nhật thành công')
-         setTimeout(() => navigate(0), 1000)
+         await dispatch(updateImage({ productId: id, productInfo: formData })).unwrap();
+         toast.success('Cập nhật ảnh thành công');
+         dispatch(fetchProductById(id));
       } catch (error) {
          toast.error(error);
       }
    };
+
+   const onSubmit = async (data) => {
+      try {
+         const payload = {
+            _id: id,
+            product_name: data.product_name,
+            product_description: data.product_description,
+            product_isnew: data.product_isnew === 'true',
+            brand: data.brand?._id || data.brand,
+         };
+         if (data.product_capacity != null && data.product_capacity !== '') {
+            payload.product_capacity = Number(data.product_capacity);
+         }
+         await dispatch(updateProduct(payload)).unwrap();
+         toast.success('Cập nhật thành công');
+         setTimeout(() => navigate(0), 1000);
+      } catch (error) {
+         toast.error(error);
+      }
+   };
+
    return (
-      <div className='flex justify-evenly gap-4'>
-         <div className="max-w-md h-fit my-auto p-6 bg-white shadow-md rounded-lg mt-10">
-            <h2 className="text-center text-2xl font-semibold text-gray-800 mb-6">
-               CẬP NHẬT THÔNG TIN
-            </h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <>
+         <Title title="Cập nhật sản phẩm" />
+         <div className="space-y-6">
+            <div className="flex items-center gap-3">
                <div>
-                  <label className="block text-gray-700 font-medium mb-1">Loại sản phẩm:</label>
-                  <input
-                     type="text"
-                     {...register('category.category_name')}
-                     disabled
-                     className="w-full p-2 border cursor-not-allowed  border-gray-300 bg-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
+                  <h1 className="text-2xl font-bold tracking-tight">Cập nhật sản phẩm</h1>
+                  <p className="text-muted-foreground">Chỉnh sửa thông tin và hình ảnh sản phẩm</p>
                </div>
-               <div>
-                  <label className="block text-gray-700 font-medium mb-1">Tên sản phẩm:</label>
-                  <input
-                     type="text"
-                     {...register('product_name', { required: 'Tên sản phẩm không được để trống' })}
-                     className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {errors.product_name && <p className="text-red-500 text-sm mt-1">{errors.product_name.message}</p>}
-               </div>
-               {
-                  initProduct?.category?.category_slug === 'bien-tan' && <div>
-                     <label className="block text-gray-700 font-medium mb-1">Công suất:</label>
-                     <input
-                        type="number"
-                        step="any"
-                        {...register('product_capacity', {
-                           min: { value: 0, message: 'Giá trị phải lớn hơn 0' },
-                        })}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     />
-                     {errors.product_capacity && <p className="text-red-500 text-sm mt-1">{errors.product_capacity.message}</p>}
-                  </div>
-               }
+               {hasChanged && <Badge>Đã thay đổi</Badge>}
+            </div>
 
-               <div>
-                  <label className="block text-gray-700 font-medium mb-1">Là sản phẩm mới?</label>
-                  <div className="flex space-x-4">
-                     <label className="flex items-center space-x-2">
-                        <input
-                           type="radio"
-                           value='true'
-                           {...register('product_isnew')}
-                           className="text-blue-500 focus:ring-blue-500"
-                        />
-                        <span>Có</span>
-                     </label>
-                     <label className="flex items-center space-x-2">
-                        <input
-                           type="radio"
-                           value='false'
-                           {...register('product_isnew')}
-                           className="text-blue-500 focus:ring-blue-500"
-                        />
-                        <span>Không</span>
-                     </label>
-                  </div>
-               </div>
+            <Tabs defaultValue="info">
+               <TabsList>
+                  <TabsTrigger value="info">Thông tin</TabsTrigger>
+                  <TabsTrigger value="images">
+                     Hình ảnh
+                     {hasImageChanged && <span className="ml-1.5 h-2 w-2 rounded-full bg-primary" />}
+                  </TabsTrigger>
+               </TabsList>
 
-               <div>
-                  <label className="block text-gray-700 font-medium mb-1">Nhãn hàng:</label>
-                  <select
-                     {...register('brand._id', { required: 'Brand is required' })}
-                     className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                     {brands.map((brand) => (
-                        <option key={brand._id} value={brand._id}>
-                           {brand.brand_name}
-                        </option>
-                     ))}
-                  </select>
-                  {/* {errors.brand && <p className="text-red-500 text-sm mt-1">{errors.brand.message}</p>} */}
-               </div>
-               <div>
-                  <label className="block text-gray-700 font-medium mb-1">Mô tả sản phẩm:</label>
-                  <Controller
-                     control={control}
-                     name="product_description"
-                     rules={{ required: 'Mô tả sản phẩm không được để trống' }}
+               <TabsContent value="info">
+                  <Card>
+                     <CardContent className="pt-6">
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                           <div className="space-y-2">
+                              <Label>Loại sản phẩm</Label>
+                              <Input {...register('category.category_name')} disabled className="bg-muted" />
+                           </div>
 
-                     render={({ field }) => (
-                        <ReactQuill
-                           {...field}
-                           theme="snow"
-                           className="mb-[50px] w-full h-48 rounded-lg"
-                        />
-                     )}
-                  />
-                  {errors.product_description && <p className="text-red-500 text-xs mt-2">{errors.product_description.message}</p>}
+                           <div className="space-y-2">
+                              <Label>Tên sản phẩm</Label>
+                              <Input
+                                 {...register('product_name', { required: 'Tên sản phẩm không được để trống' })}
+                              />
+                              {errors.product_name && <p className="text-sm text-destructive">{errors.product_name.message}</p>}
+                           </div>
 
-                  {/* {errors.brand && <p className="text-red-500 text-sm mt-1">{errors.brand.message}</p>} */}
-               </div>
+                           {initProduct?.category?.category_slug === 'bien-tan' && (
+                              <div className="space-y-2">
+                                 <Label>Công suất</Label>
+                                 <Input
+                                    type="number"
+                                    step="any"
+                                    {...register('product_capacity', {
+                                       min: { value: 0, message: 'Giá trị phải lớn hơn 0' },
+                                    })}
+                                 />
+                                 {errors.product_capacity && <p className="text-sm text-destructive">{errors.product_capacity.message}</p>}
+                              </div>
+                           )}
 
-               <button
-                  type="submit"
-                  className={`w-full py-2 font-medium rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${hasChanged ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                     }`}
-                  disabled={!hasChanged} // Disable button if no changes detected
-               >
-                  Cập nhật
-               </button>
-            </form >
+                           <div className="space-y-2">
+                              <Label>Sản phẩm mới?</Label>
+                              <div className="flex gap-4">
+                                 <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" value="true" {...register('product_isnew')} className="accent-primary" />
+                                    <span className="text-sm">Mới</span>
+                                 </label>
+                                 <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" value="false" {...register('product_isnew')} className="accent-primary" />
+                                    <span className="text-sm">Cũ</span>
+                                 </label>
+                              </div>
+                           </div>
 
-         </div >
-         <div className='max-w-md h-fit my-auto p-6 bg-white shadow-md rounded-lg mt-10'>
-            <h2 className="text-center text-2xl font-semibold text-gray-800 mb-6">
-               CẬP NHẬT HÌNH ẢNH
-            </h2>
-            <form onSubmit={handleSubmit(onUpdateImageSubmit)} className="space-y-4">
-               <div className="relative inline-block">
-                  <label className="block text-gray-700 font-medium mb-1">Ảnh bìa sản phẩm:</label>
-                  <input
-                     type="file"
-                     {...register('product_cover_image')}
-                     onChange={handleCoverImageChange}
-                     className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  <button className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
-                     Chọn ảnh bìa khác
-                  </button>
-               </div>
-               <div className="mt-2 flex space-x-4">
-                  {initImageProduct?.product_cover_image && (
-                     <img src={baseURL + '/' + `${initImageProduct.product_cover_image}`} alt="Cover" className="mt-2 w-32 h-32 object-cover rounded" />
-                  )}
-                  {coverImagePreview && (
-                     <img src={coverImagePreview} alt="Cover Preview" className="mt-2 p-2 w-32 h-32 object-cover rounded border-2 border-dashed border-gray-500" />
-                  )}
+                           <div className="space-y-2">
+                              <Label>Nhãn hàng</Label>
+                              <select
+                                 {...register('brand._id', { required: 'Hãy chọn nhãn hàng' })}
+                                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                              >
+                                 {brands.map((brand) => (
+                                    <option key={brand._id} value={brand._id}>{brand.brand_name}</option>
+                                 ))}
+                              </select>
+                           </div>
 
-               </div>
+                           <div className="space-y-2">
+                              <Label>Mô tả sản phẩm</Label>
+                              <Controller
+                                 control={control}
+                                 name="product_description"
+                                 rules={{ required: 'Mô tả sản phẩm không được để trống' }}
+                                 render={({ field }) => (
+                                    <ReactQuill {...field} theme="snow" className="[&_.ql-container]:min-h-[120px] [&_.ql-editor]:min-h-[120px]" />
+                                 )}
+                              />
+                              {errors.product_description && <p className="text-sm text-destructive">{errors.product_description.message}</p>}
+                           </div>
 
-               {/* Additional Images */}
-               <div className="relative inline-block">
-                  <label className="block text-gray-700 font-medium mb-1">Ảnh sản phẩm</label>
-                  <input type="file"
-                     {...register('product_images')}
-                     multiple
-                     onChange={handleProductImagesChange}
-                     id="file" className="absolute inset-0 opacity-0 cursor-pointer" />
-                  <button className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-700">
-                     Chọn ảnh sản phẩm
-                  </button>
-               </div>
-               <div className="mt-2 flex space-x-2">
-                  {initImageProduct?.product_images?.map((image, index) => (
-                     <img key={image} src={baseURL + '/' + image} alt={`Product ${index + 1}`} className="w-16 h-16 object-cover rounded" />
-                  ))}
-               </div>
-               <div className="mt-2 flex space-x-2  ">
-                  {imagesPreview.map((image, index) => (
-                     <img key={image} src={image} alt={`Product ${index + 1}`} className="w-16 h-16 object-cover rounded border-dashed border-gray-500 border-2 p-2" />
-                  ))}
-               </div>
-               <button
-                  type="submit"
-                  className={`w-full py-2 font-medium rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${hasImageChanged ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                     }`}
-                  disabled={!hasImageChanged}
-               >
-                  Cập nhật hình ảnh
-               </button>
-            </form >
-         </div >
+                           <Button type="submit" className="w-full" disabled={!hasChanged}>
+                              Cập nhật thông tin
+                           </Button>
+                        </form>
+                     </CardContent>
+                  </Card>
+               </TabsContent>
 
-      </div >
+               <TabsContent value="images">
+                  <Card>
+                     <CardContent className="pt-6">
+                        <form onSubmit={handleSubmit(onUpdateImageSubmit)} className="space-y-6">
+                           <div className="space-y-3">
+                              <Label>Ảnh bìa sản phẩm</Label>
+                              <div className="flex items-start gap-4">
+                                 {initImageProduct?.product_cover_image && (
+                                    <div className="space-y-1">
+                                       <p className="text-xs text-muted-foreground">Hiện tại</p>
+                                       <img src={baseURL + initImageProduct.product_cover_image} alt="Cover" className="h-32 w-32 rounded-lg object-cover" />
+                                    </div>
+                                 )}
+                                 <label className="flex h-32 w-32 cursor-pointer flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-muted-foreground/25 transition-colors hover:border-muted-foreground/50">
+                                    <input
+                                       type="file"
+                                       accept="image/*"
+                                       className="hidden"
+                                       name={coverImageRegister.name}
+                                       ref={coverImageRegister.ref}
+                                       onBlur={coverImageRegister.onBlur}
+                                       onChange={(e) => { coverImageRegister.onChange(e); handleCoverImageChange(e); }}
+                                    />
+                                    {coverImagePreview ? (
+                                       <img src={coverImagePreview} alt="New cover" className="h-full w-full rounded-lg object-cover" />
+                                    ) : (
+                                       <>
+                                          <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                                          <span className="text-xs text-muted-foreground">Ảnh mới</span>
+                                       </>
+                                    )}
+                                 </label>
+                              </div>
+                           </div>
 
+                           <div className="space-y-3">
+                              <Label>Ảnh sản phẩm</Label>
+                              <div className="flex flex-wrap gap-2">
+                                 {initImageProduct?.product_images?.map((image, index) => (
+                                    <div key={image} className="space-y-1">
+                                       {index === 0 && <p className="text-xs text-muted-foreground">Hiện tại</p>}
+                                       {index > 0 && <p className="text-xs text-transparent">.</p>}
+                                       <img src={baseURL + image} alt={`Product ${index + 1}`} className="h-20 w-20 rounded-md object-cover" />
+                                    </div>
+                                 ))}
+                              </div>
+                              <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/25 p-4 transition-colors hover:border-muted-foreground/50">
+                                 <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    className="hidden"
+                                    name={productImagesRegister.name}
+                                    ref={productImagesRegister.ref}
+                                    onBlur={productImagesRegister.onBlur}
+                                    onChange={(e) => { productImagesRegister.onChange(e); handleProductImagesChange(e); }}
+                                 />
+                                 {imagesPreview.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2">
+                                       {imagesPreview.map((image, index) => (
+                                          <img key={image} src={image} alt={`New ${index + 1}`} className="h-20 w-20 rounded-md object-cover" />
+                                       ))}
+                                    </div>
+                                 ) : (
+                                    <>
+                                       <ImagePlus className="h-6 w-6 text-muted-foreground" />
+                                       <span className="text-sm text-muted-foreground">Chọn ảnh mới</span>
+                                    </>
+                                 )}
+                              </label>
+                           </div>
+
+                           <Button type="submit" className="w-full" disabled={!hasImageChanged}>
+                              Cập nhật hình ảnh
+                           </Button>
+                        </form>
+                     </CardContent>
+                  </Card>
+               </TabsContent>
+            </Tabs>
+         </div>
+      </>
    );
-};
-
-export default UpdateProduct;
+}

@@ -1,25 +1,31 @@
-
-import ProductTable from '../components/ProductTable';
-import 'react-toastify/dist/ReactToastify.css';
 import { useSelector } from 'react-redux';
-import Title from '../components/Title';
-import { Fragment } from 'react';
+import Title from '@/components/Title';
+import ProductTable from '@/components/ProductTable';
+import { Skeleton } from '@/components/ui/skeleton';
 
-
-const ProductList = () => {
-   const { items, status } = useSelector(state => state.products)
-
-   if (status === 'loading') {
-      return <div>Loading...</div>; // Fallback loading component
-   }
-
+export default function ProductList() {
+   const { items, total, status } = useSelector((state) => state.products);
 
    return (
-      <Fragment>
-         <Title title="Danh sách sản phẩm"/>
-         <ProductTable products={items} />
-      </Fragment>
-   );
-};
+      <>
+         <Title title="Danh sách sản phẩm" />
+         <div className="space-y-6">
+            <div>
+               <h1 className="text-2xl font-bold tracking-tight">Danh sách sản phẩm</h1>
+               <p className="text-muted-foreground">
+                  Quản lý tất cả sản phẩm trong hệ thống — Tổng cộng: <strong>{total}</strong> sản phẩm
+               </p>
+            </div>
 
-export default ProductList;
+            {status === 'loading' ? (
+               <div className="space-y-3">
+                  <Skeleton className="h-10 w-64" />
+                  <Skeleton className="h-[400px] w-full" />
+               </div>
+            ) : (
+               <ProductTable products={items} />
+            )}
+         </div>
+      </>
+   );
+}

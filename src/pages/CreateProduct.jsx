@@ -1,27 +1,35 @@
-// src/pages/ProductForm.js
-
-import React, { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import { toast } from 'react-toastify';
+import { toast } from 'sonner';
 import ReactQuill from 'react-quill-new';
-import { createProduct } from '../redux/slices/productSlice';
 import { useNavigate } from 'react-router-dom';
+import { createProduct } from '@/redux/slices/productSlice';
+import Title from '@/components/Title';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ImagePlus } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
 
-const CreateProduct = () => {
+export default function CreateProduct() {
    const dispatch = useDispatch();
    const navigate = useNavigate();
-   const brands = useSelector(state => state.brands.items);
-   const categories = useSelector(state => state.categories.items);
+   const brands = useSelector((state) => state.brands.items);
+   const categories = useSelector((state) => state.categories.items);
    const [imagesPreview, setImagesPreview] = useState([]);
    const [coverImagePreview, setCoverImagePreview] = useState('');
 
-   const { register, handleSubmit, control, watch, formState: { errors, isValid } } = useForm({
+   const { register, handleSubmit, control, watch, formState: { errors, isValid, isSubmitting } } = useForm({
       mode: 'onChange',
    });
 
    const categoryWatch = watch('category');
+   const selectedCategory = useMemo(
+      () => categories.find((c) => c._id === categoryWatch),
+      [categories, categoryWatch]
+   );
 
    const createFormData = (data) => {
       const formData = new FormData();
@@ -43,170 +51,193 @@ const CreateProduct = () => {
       try {
          await dispatch(createProduct(formData)).unwrap();
          toast.success(`Đã thêm ${data.product_name}`);
-         setTimeout(() => navigate(0), 1000);
+         navigate('/danh-sach-san-pham');
       } catch (error) {
          toast.error(error);
       }
    };
 
-   const handleImagePreview = (event, setPreview) => {
-      const files = Array.from(event.target.files);
-      const previews = files.map(file => URL.createObjectURL(file));
-      setPreview(previews.length === 1 ? previews[0] : previews);
+   const revokeUrls = (urls) => {
+      (Array.isArray(urls) ? urls : [urls]).forEach((u) => u && URL.revokeObjectURL(u));
    };
 
+   const handleImagePreview = (event, setPreview) => {
+      const files = Array.from(event.target.files);
+      const previews = files.map((file) => URL.createObjectURL(file));
+      setPreview((prev) => {
+         revokeUrls(prev);
+         return previews.length === 1 ? previews[0] : previews;
+      });
+   };
+
+   const coverImageRegister = register('product_cover_image', { required: 'Bạn chưa chọn ảnh bìa sản phẩm' });
+   const productImagesRegister = register('product_images', { required: 'Bạn chưa chọn ảnh sản phẩm' });
+
    return (
-      <div className='flex justify-evenly gap-4'>
-         <div className="max-w-md h-fit my-auto p-6 bg-white shadow-md rounded-lg mt-10">
-            <h2 className="text-center text-2xl font-semibold text-gray-800 mb-6">THÊM SẢN PHẨM</h2>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-               {/* Category */}
-               <div>
-                  <label className="block text-gray-700 font-medium mb-1">Loại sản phẩm:</label>
-                  <select
-                     {...register('category', { required: 'Hãy chọn loại sản phẩm' })}
-                     className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                     <option value=''>Chọn loại sản phẩm</option>
-                     {categories.map(category => (
-                        <option key={category._id} value={category._id}>{category.category_name}</option>
-                     ))}
-                  </select>
-                  {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category.message}</p>}
-               </div>
+      <>
+         <Title title="Thêm sản phẩm" />
+         <div className="space-y-6">
+            <div>
+               <h1 className="text-2xl font-bold tracking-tight">Thêm sản phẩm</h1>
+               <p className="text-muted-foreground">Tạo sản phẩm mới trong hệ thống</p>
+            </div>
 
-               {/* Product Name */}
-               <div>
-                  <label className="block text-gray-700 font-medium mb-1">Tên sản phẩm:</label>
-                  <input
-                     type="text"
-                     {...register('product_name', { required: 'Tên sản phẩm không được để trống' })}
-                     className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                  {errors.product_name && <p className="text-red-500 text-sm mt-1">{errors.product_name.message}</p>}
-               </div>
+            <div className="grid gap-6 lg:grid-cols-2">
+               <Card>
+                  <CardHeader>
+                     <CardTitle>Thông tin sản phẩm</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                        <div className="space-y-2">
+                           <Label>Loại sản phẩm</Label>
+                           <select
+                              {...register('category', { required: 'Hãy chọn loại sản phẩm' })}
+                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                           >
+                              <option value="">Chọn loại sản phẩm</option>
+                              {categories.map((cat) => (
+                                 <option key={cat._id} value={cat._id}>{cat.category_name}</option>
+                              ))}
+                           </select>
+                           {errors.category && <p className="text-sm text-destructive">{errors.category.message}</p>}
+                        </div>
 
-               {/* Product Capacity */}
-               {categoryWatch === '5e67d1d3616a8d11cc4eacab' && (
-                  <div>
-                     <label className="block text-gray-700 font-medium mb-1">Công suất:</label>
-                     <input
-                        type="number"
-                        step="any"
-                        {...register('product_capacity', {
-                           required: 'Công suất không được để trống',
-                           valueAsNumber: true,
-                           min: { value: 0, message: 'Công suất phải lớn hơn 0' },
-                        })}
-                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                     />
-                     {errors.product_capacity && <p className="text-red-500 text-sm mt-1">{errors.product_capacity.message}</p>}
-                  </div>
-               )}
+                        <div className="space-y-2">
+                           <Label>Tên sản phẩm</Label>
+                           <Input
+                              {...register('product_name', { required: 'Tên sản phẩm không được để trống' })}
+                              placeholder="Nhập tên sản phẩm"
+                           />
+                           {errors.product_name && <p className="text-sm text-destructive">{errors.product_name.message}</p>}
+                        </div>
 
-               {/* Is New Product */}
-               <div>
-                  <label className="block text-gray-700 font-medium mb-1">Là sản phẩm mới?</label>
-                  <div className="flex space-x-4">
-                     <label className="flex items-center space-x-2">
-                        <input
-                           type="radio"
-                           value='true'
-                           {...register('product_isnew', { required: 'Là sản phẩm mới hay cũ' })}
-                           className="text-blue-500 focus:ring-blue-500"
-                        />
-                        <span>Có</span>
-                     </label>
-                     <label className="flex items-center space-x-2">
-                        <input
-                           type="radio"
-                           value='false'
-                           {...register('product_isnew')}
-                           className="text-blue-500 focus:ring-blue-500"
-                        />
-                        <span>Không</span>
-                     </label>
-                  </div>
-                  {errors.product_isnew && <p className="text-red-500 text-sm mt-1">{errors.product_isnew.message}</p>}
-               </div>
+                        {selectedCategory?.category_slug === 'bien-tan' && (
+                           <div className="space-y-2">
+                              <Label>Công suất</Label>
+                              <Input
+                                 type="number"
+                                 step="any"
+                                 {...register('product_capacity', {
+                                    required: 'Công suất không được để trống',
+                                    valueAsNumber: true,
+                                    min: { value: 0, message: 'Công suất phải lớn hơn 0' },
+                                 })}
+                              />
+                              {errors.product_capacity && <p className="text-sm text-destructive">{errors.product_capacity.message}</p>}
+                           </div>
+                        )}
 
-               {/* Brand */}
-               <div>
-                  <label className="block text-gray-700 font-medium mb-1">Nhãn hàng:</label>
-                  <select
-                     {...register('brand', { required: 'Hãy chọn nhãn hàng' })}
-                     className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  >
-                     <option value=''>Chọn nhãn hàng</option>
-                     {brands.map(brand => (
-                        <option key={brand._id} value={brand._id}>{brand.brand_name}</option>
-                     ))}
-                  </select>
-                  {errors.brand && <p className="text-red-500 text-sm mt-1">{errors.brand.message}</p>}
-               </div>
+                        <div className="space-y-2">
+                           <Label>Sản phẩm mới?</Label>
+                           <div className="flex gap-4">
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                 <input type="radio" value="true" {...register('product_isnew', { required: 'Vui lòng chọn' })} className="accent-primary" />
+                                 <span className="text-sm">Mới</span>
+                              </label>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                 <input type="radio" value="false" {...register('product_isnew')} className="accent-primary" />
+                                 <span className="text-sm">Cũ</span>
+                              </label>
+                           </div>
+                           {errors.product_isnew && <p className="text-sm text-destructive">{errors.product_isnew.message}</p>}
+                        </div>
 
-               {/* Product Description */}
-               <div>
-                  <label className="block text-gray-700 font-medium mb-1">Mô tả sản phẩm</label>
-                  <Controller
-                     control={control}
-                     name="product_description"
-                     rules={{ required: 'Mô tả sản phẩm không được để trống' }}
-                     render={({ field }) => (
-                        <ReactQuill {...field} theme="snow" className="mb-[50px] w-full h-48 rounded-lg" />
-                     )}
-                  />
-                  {errors.product_description && <p className="text-red-500 text-xs mt-2">{errors.product_description.message}</p>}
-               </div>
+                        <div className="space-y-2">
+                           <Label>Nhãn hàng</Label>
+                           <select
+                              {...register('brand', { required: 'Hãy chọn nhãn hàng' })}
+                              className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                           >
+                              <option value="">Chọn nhãn hàng</option>
+                              {brands.map((brand) => (
+                                 <option key={brand._id} value={brand._id}>{brand.brand_name}</option>
+                              ))}
+                           </select>
+                           {errors.brand && <p className="text-sm text-destructive">{errors.brand.message}</p>}
+                        </div>
 
-               {/* Cover Image */}
-               <div className='relative'>
-                  <label className="block text-gray-700 font-medium mb-1">Ảnh bìa sản phẩm:</label>
-                  <input
-                     type="file"
-                     {...register('product_cover_image', { required: 'Bạn chưa chọn ảnh bìa sản phẩm' })}
-                     onChange={(e) => handleImagePreview(e, setCoverImagePreview)}
-                     className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  <button className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-700">Chọn ảnh bìa</button>
-                  {errors.product_cover_image && <p className="text-red-500 text-xs mt-2">{errors.product_cover_image.message}</p>}
-                  {coverImagePreview && (
-                     <img src={coverImagePreview} alt="Cover Preview" className="mt-2 p-2 w-32 h-32 object-cover rounded border-2 border-dashed border-gray-500" />
-                  )}
-               </div>
+                        <div className="space-y-2">
+                           <Label>Mô tả sản phẩm</Label>
+                           <Controller
+                              control={control}
+                              name="product_description"
+                              rules={{ required: 'Mô tả sản phẩm không được để trống' }}
+                              render={({ field }) => (
+                                 <ReactQuill {...field} theme="snow" className="[&_.ql-container]:min-h-[120px] [&_.ql-editor]:min-h-[120px]" />
+                              )}
+                           />
+                           {errors.product_description && <p className="text-sm text-destructive">{errors.product_description.message}</p>}
+                        </div>
 
-               {/* Product Images */}
-               <div className='relative'>
-                  <label className="block text-gray-700 font-medium mb-1">Ảnh sản phẩm</label>
-                  <input
-                     type="file"
-                     {...register('product_images', { required: 'Bạn chưa chọn ảnh sản phẩm' })}
-                     multiple
-                     onChange={(e) => handleImagePreview(e, setImagesPreview)}
-                     className="absolute inset-0 opacity-0 cursor-pointer"
-                  />
-                  <button className="bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-700">Chọn ảnh sản phẩm</button>
-                  {errors.product_images && <p className="text-red-500 text-xs mt-2">{errors.product_images.message}</p>}
-                  <div className="mt-2 flex space-x-2">
-                     {imagesPreview.map((image, index) => (
-                        <img key={index} src={image} alt={`Product ${index + 1}`} className="w-16 h-16 object-cover rounded border-dashed border-gray-500 border-2 p-2" />
-                     ))}
-                  </div>
-               </div>
+                        <Button type="submit" className="w-full" disabled={!isValid || isSubmitting}>
+                           {isSubmitting ? 'Đang tạo...' : 'Thêm sản phẩm'}
+                        </Button>
+                     </form>
+                  </CardContent>
+               </Card>
 
-               {/* Submit Button */}
-               <button
-                  type="submit"
-                  className={`w-full py-2 font-medium rounded focus:outline-none focus:ring-2 focus:ring-blue-500 ${isValid ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                     }`}
-                  disabled={!isValid}
-               >
-                  Thêm
-               </button>
-            </form>
+               <Card>
+                  <CardHeader>
+                     <CardTitle>Hình ảnh</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                     <div className="space-y-2">
+                        <Label>Ảnh bìa sản phẩm</Label>
+                        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/25 p-6 transition-colors hover:border-muted-foreground/50">
+                           <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              name={coverImageRegister.name}
+                              ref={coverImageRegister.ref}
+                              onBlur={coverImageRegister.onBlur}
+                              onChange={(e) => { coverImageRegister.onChange(e); handleImagePreview(e, setCoverImagePreview); }}
+                           />
+                           {coverImagePreview ? (
+                              <img src={coverImagePreview} alt="Cover Preview" className="h-40 w-40 rounded-lg object-cover" />
+                           ) : (
+                              <>
+                                 <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                                 <span className="text-sm text-muted-foreground">Chọn ảnh bìa</span>
+                              </>
+                           )}
+                        </label>
+                        {errors.product_cover_image && <p className="text-sm text-destructive">{errors.product_cover_image.message}</p>}
+                     </div>
+
+                     <div className="space-y-2">
+                        <Label>Ảnh sản phẩm</Label>
+                        <label className="flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border-2 border-dashed border-muted-foreground/25 p-6 transition-colors hover:border-muted-foreground/50">
+                           <input
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              className="hidden"
+                              name={productImagesRegister.name}
+                              ref={productImagesRegister.ref}
+                              onBlur={productImagesRegister.onBlur}
+                              onChange={(e) => { productImagesRegister.onChange(e); handleImagePreview(e, setImagesPreview); }}
+                           />
+                           {imagesPreview.length > 0 ? (
+                              <div className="flex flex-wrap gap-2">
+                                 {imagesPreview.map((image, index) => (
+                                    <img key={index} src={image} alt={`Product ${index + 1}`} className="h-20 w-20 rounded-md object-cover" />
+                                 ))}
+                              </div>
+                           ) : (
+                              <>
+                                 <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                                 <span className="text-sm text-muted-foreground">Chọn ảnh sản phẩm (nhiều ảnh)</span>
+                              </>
+                           )}
+                        </label>
+                        {errors.product_images && <p className="text-sm text-destructive">{errors.product_images.message}</p>}
+                     </div>
+                  </CardContent>
+               </Card>
+            </div>
          </div>
-      </div>
+      </>
    );
-};
-
-export default CreateProduct;
+}

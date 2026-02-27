@@ -1,118 +1,254 @@
-import { Fragment, useMemo, useState } from 'react';
-import { AgGridReact } from 'ag-grid-react';
-
-import 'ag-grid-community/styles/ag-grid.css';
-import 'ag-grid-community/styles/ag-theme-alpine.css';
+import { useState, useMemo } from 'react';
+import {
+   useReactTable,
+   getCoreRowModel,
+   getFilteredRowModel,
+   getPaginationRowModel,
+   getSortedRowModel,
+   flexRender,
+} from '@tanstack/react-table';
 import { useDispatch } from 'react-redux';
-import { FaEdit, FaTrash } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
-import Modal from './Modal';
-import { toast } from 'react-toastify';
-import { deleteProduct } from '../redux/slices/productSlice';
+import { toast } from 'sonner';
+import { Pencil, Trash2, ArrowUpDown, Search } from 'lucide-react';
+import { deleteProduct } from '@/redux/slices/productSlice';
+import { baseURL } from '@/api/axios';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import {
+   Table,
+   TableBody,
+   TableCell,
+   TableHead,
+   TableHeader,
+   TableRow,
+} from '@/components/ui/table';
+import {
+   AlertDialog,
+   AlertDialogAction,
+   AlertDialogCancel,
+   AlertDialogContent,
+   AlertDialogDescription,
+   AlertDialogFooter,
+   AlertDialogHeader,
+   AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
 
-
-
-const ProductTable = ({ products }) => {
-   const navigate = useNavigate()
-   const dispatch = useDispatch()
-   const [isModalOpen, setIsModalOpen] = useState(false);
+export default function ProductTable({ products }) {
+   const navigate = useNavigate();
+   const dispatch = useDispatch();
+   const [sorting, setSorting] = useState([]);
+   const [globalFilter, setGlobalFilter] = useState('');
    const [productToDelete, setProductToDelete] = useState(null);
-
-   const handleModalClose = () => {
-      setIsModalOpen(false);
-      setProductToDelete(null);
-   };
-
-
-   const ActionCellRenderer = ({ data }) => {
-      const handleDeleteClick = () => {
-         setProductToDelete(data._id);
-         setIsModalOpen(true);
-      };
-
-
-      const handleUpdate = () => {
-         navigate(`/san-pham/cap-nhat-san-pham/${data._id}`)
-      }
-
-      return (
-         <Fragment>
-            <div className="flex">
-               <button
-                  onClick={handleUpdate}
-                  className="flex items-center bg-blue-500 text-white px-2 py-1 rounded mr-2"
-               >
-                  <FaEdit />
-               </button>
-               <button
-                  onClick={handleDeleteClick}
-                  className="flex items-center bg-red-500 text-white px-2 py-1 rounded"
-               >
-                  <FaTrash />
-               </button>
-            </div>
-         </Fragment>
-      );
-   };
 
    const handleDeleteConfirm = async () => {
       if (!productToDelete) return;
       try {
-         // Delete the product from API
-         await dispatch(deleteProduct(productToDelete)).unwrap()
-         setIsModalOpen(false);
-         toast.success('Đã xoá')
+         await dispatch(deleteProduct(productToDelete._id)).unwrap();
+         toast.success(`Đã xoá ${productToDelete.product_name}`);
       } catch (error) {
-         toast.error(error)
+         toast.error(error);
+      } finally {
+         setProductToDelete(null);
       }
    };
 
    const columns = useMemo(() => [
       {
-         headerName: 'Loại Sản Phẩm', field: 'category.category_name', filter: 'agSetColumnFilter', // Dropdown filter for category
-         filterParams: {
-            values: Array.from(new Set(products.map((product) => product.category))),
-            // Extract unique categories for filter options
+         id: 'image',
+         header: 'Ảnh',
+         cell: ({ row }) => {
+            const src = row.original.product_images?.[0] || row.original.product_cover_image;
+            return src ? (
+               <img src={baseURL + src} alt={row.original.product_name} className="h-10 w-10 rounded object-cover" />
+            ) : (
+               <div className="flex h-10 w-10 items-center justify-center rounded bg-muted text-xs text-muted-foreground">N/A</div>
+            );
          },
-      },
-      { headerName: 'Tên Sản Phẩm', field: 'product_name', filter: 'agTextColumnFilter', },
-      {
-         headerName: 'Mới/Cũ',
-         field: 'product_isnew',
-         filter: 'agTextColumnFilter',
-         valueFormatter: (params) => {
-            return params.value ? 'Mới' : 'Cũ';  // Display "Mới" or "Cũ" based on value
-         }
+         enableSorting: false,
+         enableGlobalFilter: false,
       },
       {
-         headerName: 'Hãng', field: 'brand.brand_name', filter: 'agSetColumnFilter', filterParams: {
-            values: Array.from(new Set(products.map((product) => product.brand.brand_name))),
-            // Extract unique brand names for filter options
-         }
+         accessorFn: (row) => row.category?.category_name ?? '',
+         id: 'category',
+         header: 'Loại SP',
+         cell: ({ getValue }) => (
+            <Badge variant="secondary" className="font-normal">
+               {getValue()}
+            </Badge>
+         ),
       },
-      { headerName: 'Ngày Tạo', field: 'createdAt', valueFormatter: ({ value }) => new Date(value).toLocaleString('vi-VN') },
       {
-         headerName: 'Actions',
-         field: 'actions',
-         cellRenderer: ActionCellRenderer
+         accessorKey: 'product_name',
+         header: ({ column }) => (
+            <Button variant="ghost" className="-ml-4" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+               Tên sản phẩm
+               <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+         ),
       },
-   ], [products]);
+      {
+         accessorKey: 'product_isnew',
+         header: ({ column }) => (
+            <Button variant="ghost" className="-ml-4" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+               Trạng thái
+               <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+         ),
+         cell: ({ getValue }) => (
+            <Badge variant={getValue() ? 'default' : 'outline'}>
+               {getValue() ? 'Mới' : 'Cũ'}
+            </Badge>
+         ),
+      },
+      {
+         accessorFn: (row) => row.brand?.brand_name ?? '',
+         id: 'brand',
+         header: ({ column }) => (
+            <Button variant="ghost" className="-ml-4" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+               Hãng
+               <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+         ),
+      },
+      {
+         accessorKey: 'createdAt',
+         header: ({ column }) => (
+            <Button variant="ghost" className="-ml-4" onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}>
+               Ngày tạo
+               <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+         ),
+         cell: ({ getValue }) => new Date(getValue()).toLocaleDateString('vi-VN'),
+      },
+      {
+         id: 'actions',
+         header: '',
+         cell: ({ row }) => (
+            <div className="flex justify-end gap-1">
+               <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => navigate(`/san-pham/cap-nhat-san-pham/${row.original._id}`)}
+               >
+                  <Pencil className="h-4 w-4" />
+               </Button>
+               <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-destructive hover:text-destructive"
+                  onClick={() => setProductToDelete(row.original)}
+               >
+                  <Trash2 className="h-4 w-4" />
+               </Button>
+            </div>
+         ),
+      },
+   ], [navigate]);
+
+   const table = useReactTable({
+      data: products,
+      columns,
+      state: { sorting, globalFilter },
+      onSortingChange: setSorting,
+      onGlobalFilterChange: setGlobalFilter,
+      getCoreRowModel: getCoreRowModel(),
+      getSortedRowModel: getSortedRowModel(),
+      getFilteredRowModel: getFilteredRowModel(),
+      getPaginationRowModel: getPaginationRowModel(),
+      initialState: { pagination: { pageSize: 15 } },
+   });
 
    return (
-      <div className="ag-theme-alpine" style={{ height: "100vh", width: '100%' }}>
-         <AgGridReact
-            rowData={products}
-            columnDefs={columns}
-            pagination={true}
-            paginationPageSize={20}
+      <div className="space-y-4">
+         <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+               placeholder="Tìm kiếm sản phẩm..."
+               value={globalFilter}
+               onChange={(e) => setGlobalFilter(e.target.value)}
+               className="pl-9"
+            />
+         </div>
 
-         />
-         <Modal isOpen={isModalOpen}
-            onClose={handleModalClose}
-            onConfirm={handleDeleteConfirm}
-            productName={productToDelete ? productToDelete.name : ''} />
+         <div className="rounded-md border">
+            <Table>
+               <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                     <TableRow key={headerGroup.id}>
+                        {headerGroup.headers.map((header) => (
+                           <TableHead key={header.id}>
+                              {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                           </TableHead>
+                        ))}
+                     </TableRow>
+                  ))}
+               </TableHeader>
+               <TableBody>
+                  {table.getRowModel().rows.length ? (
+                     table.getRowModel().rows.map((row) => (
+                        <TableRow key={row.id}>
+                           {row.getVisibleCells().map((cell) => (
+                              <TableCell key={cell.id}>
+                                 {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                              </TableCell>
+                           ))}
+                        </TableRow>
+                     ))
+                  ) : (
+                     <TableRow>
+                        <TableCell colSpan={columns.length} className="h-24 text-center text-muted-foreground">
+                           Không có sản phẩm nào.
+                        </TableCell>
+                     </TableRow>
+                  )}
+               </TableBody>
+            </Table>
+         </div>
+
+         <div className="flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+               {table.getFilteredRowModel().rows.length} sản phẩm
+            </p>
+            <div className="flex gap-2">
+               <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.previousPage()}
+                  disabled={!table.getCanPreviousPage()}
+               >
+                  Trước
+               </Button>
+               <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => table.nextPage()}
+                  disabled={!table.getCanNextPage()}
+               >
+                  Sau
+               </Button>
+            </div>
+         </div>
+
+         <AlertDialog open={!!productToDelete} onOpenChange={(open) => !open && setProductToDelete(null)}>
+            <AlertDialogContent>
+               <AlertDialogHeader>
+                  <AlertDialogTitle>Xác nhận xoá</AlertDialogTitle>
+                  <AlertDialogDescription>
+                     Bạn có chắc muốn xoá <span className="font-semibold">{productToDelete?.product_name}</span>?
+                     Hành động này không thể hoàn tác.
+                  </AlertDialogDescription>
+               </AlertDialogHeader>
+               <AlertDialogFooter>
+                  <AlertDialogCancel>Huỷ</AlertDialogCancel>
+                  <AlertDialogAction onClick={handleDeleteConfirm} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                     Xoá
+                  </AlertDialogAction>
+               </AlertDialogFooter>
+            </AlertDialogContent>
+         </AlertDialog>
       </div>
    );
-};
-
-export default ProductTable;
+}

@@ -1,4 +1,5 @@
-// src/redux/slices/productSlice.js
+// src/redux/slices/categorySlice.js
+
 
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../api/axios";
@@ -12,11 +13,11 @@ export const createCategory = createAsyncThunk(
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }); // API call to create a brand
-      return response.data.metadata; // Assuming the backend returns the newly created brand
+      });
+      return response.data.metadata;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to create brand"
+        error.response?.data?.message || "Failed to create category"
       );
     }
   }
@@ -29,7 +30,7 @@ export const fetchCategories = createAsyncThunk(
       return response.data.metadata;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to fetch brands"
+        error.response?.data?.message || "Failed to fetch categories"
       );
     }
   }
@@ -37,15 +38,15 @@ export const fetchCategories = createAsyncThunk(
 
 export const deleteCategory = createAsyncThunk(
   "categories/deleteCategory",
-  async (brandId, { rejectWithValue }) => {
+  async (categoryId, { rejectWithValue }) => {
     try {
-      await api.delete(`api/v1/categories/${brandId}`, {
+      await api.delete(`api/v1/categories/${categoryId}`, {
         withCredentials: true,
       });
-      return brandId; // Return the deleted brand ID
+      return categoryId;
     } catch (error) {
       return rejectWithValue(
-        error.response?.data?.message || "Failed to delete brand"
+        error.response?.data?.message || "Failed to delete category"
       );
     }
   }
@@ -54,14 +55,12 @@ const categorySlice = createSlice({
   name: "categories",
   initialState: {
     items: [],
-    status: "idle", // 'idle' | 'loading' | 'succeeded' | 'failed'
-    error: null, // Error messages
+    status: "idle",
+    error: null,
   },
   reducers: {},
   extraReducers: (builder) => {
     builder
-      // Fetch brands
-
       .addCase(fetchCategories.pending, (state) => {
         state.status = "loading";
         state.error = null;
@@ -75,12 +74,10 @@ const categorySlice = createSlice({
         state.error = action.payload;
       })
 
-      // Create brand
       .addCase(createCategory.fulfilled, (state, action) => {
-        state.items.push(action.payload); // Add new brand to the list
+        state.items.push(action.payload);
       })
 
-      // Delete brand
       .addCase(deleteCategory.fulfilled, (state, action) => {
         state.items = state.items.filter(
           (category) => category._id !== action.payload
