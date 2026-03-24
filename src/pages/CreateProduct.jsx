@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ImagePlus } from 'lucide-react';
+import { ImagePlus, X } from 'lucide-react';
 import 'react-quill-new/dist/quill.snow.css';
 
 export default function CreateProduct() {
@@ -21,7 +21,7 @@ export default function CreateProduct() {
    const [imagesPreview, setImagesPreview] = useState([]);
    const [coverImagePreview, setCoverImagePreview] = useState('');
 
-   const { register, handleSubmit, control, watch, formState: { errors, isValid, isSubmitting } } = useForm({
+   const { register, handleSubmit, control, watch, setValue, formState: { errors, isValid, isSubmitting } } = useForm({
       mode: 'onChange',
    });
 
@@ -71,7 +71,17 @@ export default function CreateProduct() {
    };
 
    const coverImageRegister = register('product_cover_image', { required: 'Bạn chưa chọn ảnh bìa sản phẩm' });
-   const productImagesRegister = register('product_images', { required: 'Bạn chưa chọn ảnh sản phẩm' });
+   register('product_images', { validate: (v) => (v && v.length > 0) || 'Bạn chưa chọn ảnh sản phẩm' });
+
+   const removeProductImage = (index) => {
+      const currentFiles = watch('product_images') || [];
+      const newFiles = [...currentFiles].filter((_, i) => i !== index);
+      setValue('product_images', newFiles, { shouldValidate: true });
+      setImagesPreview((prev) => {
+         URL.revokeObjectURL(prev[index]);
+         return prev.filter((_, i) => i !== index);
+      });
+   };
 
    return (
       <>
@@ -214,24 +224,36 @@ export default function CreateProduct() {
                               accept="image/*"
                               multiple
                               className="hidden"
-                              name={productImagesRegister.name}
-                              ref={productImagesRegister.ref}
-                              onBlur={productImagesRegister.onBlur}
-                              onChange={(e) => { productImagesRegister.onChange(e); handleImagePreview(e, setImagesPreview); }}
+                              onChange={(e) => {
+                                 const files = Array.from(e.target.files);
+                                 if (!files.length) return;
+                                 const currentFiles = watch('product_images') || [];
+                                 const newFiles = [...currentFiles, ...files].slice(0, 10);
+                                 setValue('product_images', newFiles, { shouldValidate: true });
+                                 const newPreviews = files.map((f) => URL.createObjectURL(f));
+                                 setImagesPreview((prev) => [...prev, ...newPreviews].slice(0, 10));
+                                 e.target.value = '';
+                              }}
                            />
-                           {imagesPreview.length > 0 ? (
-                              <div className="flex flex-wrap gap-2">
-                                 {imagesPreview.map((image, index) => (
-                                    <img key={index} src={image} alt={`Product ${index + 1}`} className="h-20 w-20 rounded-md object-cover" />
-                                 ))}
-                              </div>
-                           ) : (
-                              <>
-                                 <ImagePlus className="h-8 w-8 text-muted-foreground" />
-                                 <span className="text-sm text-muted-foreground">Chọn ảnh sản phẩm (nhiều ảnh)</span>
-                              </>
-                           )}
+                           <ImagePlus className="h-8 w-8 text-muted-foreground" />
+                           <span className="text-sm text-muted-foreground">Chọn ảnh sản phẩm (từ 1 đến 10 ảnh)</span>
                         </label>
+                        {imagesPreview.length > 0 && (
+                           <div className="flex flex-wrap gap-2">
+                              {imagesPreview.map((image, index) => (
+                                 <div key={index} className="relative">
+                                    <img src={image} alt={`Product ${index + 1}`} className="h-20 w-20 rounded-md object-cover" />
+                                    <button
+                                       type="button"
+                                       onClick={() => removeProductImage(index)}
+                                       className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/80"
+                                    >
+                                       <X className="h-3 w-3" />
+                                    </button>
+                                 </div>
+                              ))}
+                           </div>
+                        )}
                         {errors.product_images && <p className="text-sm text-destructive">{errors.product_images.message}</p>}
                      </div>
                   </CardContent>
