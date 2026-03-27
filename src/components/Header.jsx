@@ -1,5 +1,6 @@
 import { useLocation } from 'react-router-dom';
-import { LogOut, User } from 'lucide-react';
+import { LogOut, User, Moon, Sun } from 'lucide-react';
+import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Separator } from '@/components/ui/separator';
@@ -31,6 +32,7 @@ const ROUTE_LABELS = {
 
 export default function Header() {
    const { logout, userData } = useAuth();
+   const { theme, toggleTheme } = useTheme();
    const location = useLocation();
 
    const currentLabel =
@@ -57,6 +59,10 @@ export default function Header() {
                </BreadcrumbItem>
             </BreadcrumbList>
          </Breadcrumb>
+
+         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleTheme}>
+            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+         </Button>
 
          <DropdownMenu>
             <DropdownMenuTrigger asChild>

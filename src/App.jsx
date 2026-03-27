@@ -3,6 +3,7 @@ import { lazy, Suspense } from 'react';
 import { Toaster } from 'sonner';
 import { HelmetProvider } from 'react-helmet-async';
 import AuthProvider from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import DataInitializer from './components/DataInitializer';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -26,9 +27,10 @@ function PageLoader() {
 
 function App() {
    return (
-      <HelmetProvider>
-         <Router>
-            <AuthProvider>
+      <ThemeProvider>
+         <HelmetProvider>
+            <Router>
+               <AuthProvider>
                <DataInitializer>
                   <Suspense fallback={<PageLoader />}>
                      <Routes>
@@ -46,9 +48,10 @@ function App() {
                   </Suspense>
                </DataInitializer>
                <Toaster richColors position="top-right" />
-            </AuthProvider>
-         </Router>
-      </HelmetProvider>
+               </AuthProvider>
+            </Router>
+         </HelmetProvider>
+      </ThemeProvider>
    );
 }
 
