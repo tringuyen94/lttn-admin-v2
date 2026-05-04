@@ -7,6 +7,7 @@ import {
    Tags,
    Layers,
    KeyRound,
+   Warehouse,
    Zap,
 } from 'lucide-react';
 import {
@@ -35,6 +36,7 @@ const NAV_GROUPS = [
       items: [
          { path: '/danh-sach-san-pham', name: 'Danh sách sản phẩm', icon: Package },
          { path: '/them-san-pham', name: 'Thêm sản phẩm', icon: Plus },
+         { path: '/kho', name: 'Quản lý kho', icon: Warehouse },
       ],
    },
    {
