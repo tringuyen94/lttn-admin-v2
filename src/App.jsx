@@ -16,6 +16,7 @@ const Project = lazy(() => import('./pages/Project'));
 const Brand = lazy(() => import('./pages/Brand'));
 const Category = lazy(() => import('./pages/Category'));
 const UpdatePassword = lazy(() => import('./pages/UpdatePassword'));
+const Inventory = lazy(() => import('./pages/Inventory'));
 
 function PageLoader() {
    return (
@@ -42,6 +43,7 @@ function App() {
                         <Route path="/du-an-thi-cong" element={<ProtectedRoute element={<Project />} />} />
                         <Route path="/hang" element={<ProtectedRoute element={<Brand />} />} />
                         <Route path="/loai-san-pham" element={<ProtectedRoute element={<Category />} />} />
+                        <Route path="/kho" element={<ProtectedRoute element={<Inventory />} />} />
                         <Route path="/cap-nhat-mat-khau" element={<ProtectedRoute element={<UpdatePassword />} />} />
                         <Route path="*" element={<Navigate to="/login" />} />
                      </Routes>
